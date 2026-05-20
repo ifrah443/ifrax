@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>
+        <%= title %>
+    </title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+
+<body>
+    <main class="container wide">
+        <h1>
+            <%= title %>
+        </h1>
+        <a href="/" class="back-link">← Back to Home</a>
+
+        <div class="table-wrapper">
+            <table class="clean-table">
+                <thead>
+                    <tr>
+                        <th>License Plate</th>
+                        <th>Owner Name</th>
+                        <th>Phone</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <% rickshaws.forEach(r=> { %>
+                        <tr>
+                            <td>
+                                <%= r.licensePlate %>
+                            </td>
+                            <td>
+                                <%= r.ownerName %>
+                            </td>
+                            <td>
+                                <%= r.phoneNumber || 'N/A' %>
+                            </td>
+                            <td>
+                                <!-- In the table row loop -->
+                            <td class="actions-cell">
+                                <!-- 👇 NEW: Links to server-rendered page -->
+                                <a href="/rickshaw/<%= encodeURIComponent(r.licensePlate) %>"
+                                    class="btn-sm btn-view">View</a>
+
+                                <!-- Pay button (keeps using API) -->
+                                <button class="btn-sm btn-pay"
+                                    onclick="quickPay('<%= r._id %>', '<%= r.licensePlate %>')">Pay</button>
+                            </td>
+                            </td>
+                        </tr>
+                        <% }) %>
+                </tbody>
+            </table>
+        </div>
+    </main>
+
+    <script>
+        // Quick Pay using your existing payment API
+        async function quickPay(id, plate) {
+            const amount = prompt(`Enter payment amount for ${plate}:`);
+            if (!amount || isNaN(amount) || amount <= 0) return;
+
+            try {
+                const res = await fetch(`/api/rickshaws/${id}/pay`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ amount: parseFloat(amount), description: 'Quick pay from table' })
+                });
+                const data = await res.json();
+
+                if (res.ok) {
+                    alert(`✅ Payment of $${data.transaction.amount} recorded!`);
+                    location.reload(); // Refresh to reflect updated state
+                } else {
+                    alert(`❌ ${data.error}`);
+                }
+            } catch (err) {
+                alert('❌ Network error. Please try again.');
+            }
+        }
+    </script>
+</body>
+
+</html>

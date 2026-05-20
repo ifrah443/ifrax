@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= title %></title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <main class="container">
+    <h1><%= title %></h1>
+    
+    <form action="/api/rickshaws" method="POST" enctype="multipart/form-data" class="form-grid">
+      
+      <div class="form-group">
+        <label for="licensePlate">License Plate *</label>
+        <input type="text" id="licensePlate" name="licensePlate" required placeholder="ABC123" maxlength="20">
+      </div>
+
+      <div class="form-group">
+        <label for="ownerName">Owner Name *</label>
+        <input type="text" id="ownerName" name="ownerName" required placeholder="Full name">
+      </div>
+
+      <div class="form-group">
+        <label for="phoneNumber">Phone Number</label>
+        <input type="tel" id="phoneNumber" name="phoneNumber" placeholder="+252 61 XXX XXX">
+      </div>
+
+      <div class="form-group">
+        <label for="make">Make *</label>
+        <input type="text" id="make" name="make" required placeholder="e.g., Bajaj, TVS, Piaggio">
+      </div>
+
+      <div class="form-group">
+        <label for="year">Year *</label>
+        <input type="number" id="year" name="year" required min="1900" max="2030" placeholder="2024">
+      </div>
+
+      <div class="form-group full-width">
+        <label for="vehicleImage">Vehicle Image *</label>
+        <input type="file" id="vehicleImage" name="vehicleImage" accept="image/*" required>
+        <small style="color:#6b7280">Max 5MB • JPG, PNG, or WebP</small>
+      </div>
+
+      <button type="submit" class="btn btn-primary full-width">Register Rickshaw</button>
+    </form>
+
+    <a href="/" class="back-link">← Back to Home</a>
+  </main>
+
+  <script>
+    // Optional: Preview image before upload
+    document.getElementById('vehicleImage').addEventListener('change', function(e) {
+      const file = e.target.files[0];
+      if (file && file.size > 5 * 1024 * 1024) {
+        alert('Image too large. Please select a file under 5MB.');
+        this.value = '';
+      }
+    });
+  </script>
+</body>
+</html>

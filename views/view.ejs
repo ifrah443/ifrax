@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>
+    <%= title %>
+  </title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+
+<body>
+  <main class="container">
+    <h1>
+      <%= title %>
+    </h1>
+    <p>Geli taargada Bajaajks si aad u hesho maclumaadkeeda.</p>
+
+    <form id="searchForm" class="search-form">
+      <div class="form-group">
+        <label for="plate">License Plate</label>
+        <input type="text" id="plate" name="plate" required placeholder="e.g., CAR123" maxlength="20">
+      </div>
+      <button type="submit" class="btn btn-primary full-width">Raadi Bajaajka</button>
+    </form>
+
+    <div id="result" class="result-box" style="display:none;"></div>
+    <a href="/" class="back-link">← Back to Home</a>
+  </main>
+
+  <script>
+    let pollTimer; // Holds the balance refresh timer
+
+    // 🎯 Search Form Handler (your existing logic + balance + polling)
+    document.getElementById('searchForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const plate = document.getElementById('plate').value.trim();
+      const resultBox = document.getElementById('result');
+
+      // Clear previous polling if searching new plate
+      if (pollTimer) clearInterval(pollTimer);
+
+      resultBox.style.display = 'block';
+      resultBox.innerHTML = '<p>🔍 Searching...</p>';
+
+      try {
+        const res = await fetch(`/api/rickshaws/search?plate=${encodeURIComponent(plate)}`);
+        const data = await res.json();
+
+        if (!res.ok) {
+          resultBox.innerHTML = `<p class="error">❌ ${data.error}</p>`;
+          return;
+        }
+
+        // ✅ Render card WITH balance field
+        resultBox.innerHTML = `
+        <div class="rickshaw-card">
+          ${data.image ? `<img src="${data.image}" alt="Rickshaw" class="rickshaw-img">` : '<div class="rickshaw-img-placeholder">No Image</div>'}
+          <h3>${data.make} • ${data.year}</h3>
+          <p><strong>Plate:</strong> ${data.licensePlate}</p>
+          <p><strong>Owner:</strong> ${data.ownerName}</p>
+          <p><strong>Phone:</strong> ${data.phoneNumber || 'N/A'}</p>
+          <p><strong>Registered:</strong> ${new Date(data.registrationDate).toLocaleDateString()}</p>
+          <p><strong>Status:</strong> ${data.isActive ? '✅ Active' : '⚠️ Inactive'}</p>
+          
+          <!-- 💰 Balance Badge -->
+          <div class="balance-badge ${data.balance > 0 ? 'owe' : ''}" id="balanceBadge">
+            <strong>Balance:</strong> $<span id="balanceValue">${(data.balance || 0).toFixed(2)}</span>
+            <small>${data.balance > 0 ? 'Lacag baa lagu leeyahay' : 'Laguuma lahan'}</small>
+          </div>
+        </div>
+      `;
+
+        // 🔄 Start 30-second balance polling
+        startBalancePolling(plate);
+
+      } catch (err) {
+        resultBox.innerHTML = `<p class="error">❌ Network error. Please try again.</p>`;
+      }
+    });
+
+    // 💰 Minimal polling: fetches ONLY balance every 30s
+    function startBalancePolling(plate) {
+      pollTimer = setInterval(async () => {
+        try {
+          const res = await fetch(`/api/rickshaws/search?plate=${encodeURIComponent(plate)}`);
+          const data = await res.json();
+          if (res.ok && data.balance !== undefined) {
+            // ✅ Update ONLY the balance parts (no full re-render)
+            document.getElementById('balanceValue').textContent = (data.balance || 0).toFixed(2);
+            document.getElementById('balanceBadge').className =
+              `balance-badge ${data.balance > 0 ? 'owe' : ''}`;
+          }
+        } catch (e) { /* Silent fail for background updates */ }
+      }, 30000); // 30 seconds
+    }
+
+    // 🔍 Auto-search from table link (unchanged)
+    window.addEventListener('DOMContentLoaded', () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      const plateFromUrl = urlParams.get('plate');
+      if (plateFromUrl) {
+        const plateInput = document.getElementById('plate');
+        if (plateInput) {
+          plateInput.value = plateFromUrl;
+          document.getElementById('searchForm').dispatchEvent(new Event('submit'));
+        }
+      }
+    });
+  </script>
+</body>
+
+</html>

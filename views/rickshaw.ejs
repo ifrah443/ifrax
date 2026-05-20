@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>
+    <%= title %>
+  </title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+
+<body>
+  <main class="container">
+    <h1>
+      <%= title %>
+    </h1>
+    <a href="/" class="back-link">← Back to Home</a>
+
+    <div class="rickshaw-card">
+      <!-- Image -->
+      <% if (rickshaw.image) { %>
+        <img src="<%= rickshaw.image %>" alt="Rickshaw <%= rickshaw.licensePlate %>" class="rickshaw-img">
+        <% } else { %>
+          <div class="rickshaw-img-placeholder">No Image</div>
+          <% } %>
+
+            <!-- Details -->
+            <h3>
+              <%= rickshaw.make %> • <%= rickshaw.year %>
+            </h3>
+            <p><strong>Plate:</strong>
+              <%= rickshaw.licensePlate %>
+            </p>
+            <p><strong>Owner:</strong>
+              <%= rickshaw.ownerName %>
+            </p>
+            <p><strong>Phone:</strong>
+              <%= rickshaw.phoneNumber || 'N/A' %>
+            </p>
+            <p><strong>Registered:</strong>
+              <%= new Date(rickshaw.registrationDate).toLocaleDateString() %>
+            </p>
+            <p><strong>Status:</strong>
+              <%= rickshaw.isActive ? '✅ Active' : '⚠️ Inactive' %>
+            </p>
+
+            <!-- Balance (from stored field) -->
+            <!-- Balance (from stored field) -->
+            <div class="balance-badge <%= (rickshaw.balance || 0) > 0 ? 'owe' : '' %>" id="balanceBadge"
+              data-plate="<%= rickshaw.licensePlate %>">
+
+              <strong>Current Balance:</strong> $<span id="balanceValue">
+                <%= (rickshaw.balance || 0).toFixed(2) %>
+              </span>
+
+              <p><small>
+                  <%= (rickshaw.balance || 0)> 0 ? 'Lacag baa lagu leeyahay' : 'Laguuma lahan wax lacag ah' %>
+                </small></p>
+            </div>
+
+            <!-- Quick Pay Form (simple, no JS) -->
+            <form action="/api/rickshaws/<%= rickshaw._id %>/pay" method="POST" class="payment-form-simple">
+              <input type="hidden" name="_method" value="POST">
+              <div class="form-row">
+                <input type="number" name="amount" step="0.01" min="0.01" placeholder="Amount ($)" required>
+                <input type="text" name="description" placeholder="Note (optional)" maxlength="50">
+              </div>
+              <button type="submit" class="btn btn-success">💵 Pay Now</button>
+            </form>
+    </div>
+
+    <a href="/all-vehicles" class="back-link">← View All Vehicles</a>
+  </main>
+  <!-- 💰 Minimal balance polling (30s) - for testing only -->
+  <script>
+    // Only run if we have a rickshaw ID (skip on 404 pages)
+    const rickshawId = "<%= rickshaw._id %>";
+    if (rickshawId && rickshawId !== "undefined") {
+      let balanceTimer;
+
+      function pollBalance() {
+        fetch(`/vehicles/api/rickshaws/search?plate=<%= encodeURIComponent(rickshaw.licensePlate) %>`)
+          .then(r => r.json())
+          .then(data => {
+            if (data.balance !== undefined) {
+              // ✅ Update ONLY the balance parts
+              document.getElementById('balanceValue').textContent = (data.balance || 0).toFixed(2);
+              document.getElementById('balanceBadge').className =
+                `balance-badge ${data.balance > 0 ? 'owe' : ''}`;
+            }
+          })
+          .catch(() => { }); // Silent fail for background updates
+      }
+
+      // Start polling every 30 seconds
+      balanceTimer = setInterval(pollBalance, 30000);
+
+      // Cleanup if user navigates away (optional but clean)
+      window.addEventListener('beforeunload', () => clearInterval(balanceTimer));
+    }
+  </script>
+</body>
+
+</html>
